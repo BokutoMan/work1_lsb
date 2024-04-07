@@ -3,7 +3,6 @@ extern crate minifb;
 use minifb::{Window, WindowOptions, ScaleMode, Scale};
 use image::{GrayImage,ImageBuffer,Luma};
 use std::env::args;
-use rand::prelude::*;
 
 fn get_bit(s:String, u:&mut Vec<u8>){
     // 遍历字节序列并获取每个字节的每个 bit
@@ -81,7 +80,7 @@ fn processed_gray_image(img:&ImageBuffer<Luma<u8>, Vec<u8>>, s:String)->ImageBuf
         for x in 0..img.width() {
             // 获取当前像素的灰度值
             let mut pixel_value = img.get_pixel(x, y)[0];
-            
+
             // 将像素的最低位替换为二进制数组中相应位置上的值
             if let Some(&bit) = binary_array.get((y * img.width() + x) as usize) {
                 if bit == 0 {
