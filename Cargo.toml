@@ -1,0 +1,13 @@
+[package]
+name = "work1_lsb"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+image ={ version = "0.25.0"}
+minifb = "0.25.0"
+plotters = "0.3.4"
+statrs = "0.16.0"
+rand = "0.8.4"
