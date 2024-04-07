@@ -2,7 +2,7 @@ extern crate image;
 extern crate minifb;
 use minifb::{Window, WindowOptions, ScaleMode, Scale};
 use image::{GrayImage,ImageBuffer,Luma};
-use std::env::args;
+use rand::prelude::*;
 
 fn get_bit(s:String, u:&mut Vec<u8>){
     // 遍历字节序列并获取每个字节的每个 bit
@@ -69,12 +69,36 @@ fn _display_img(img:&ImageBuffer<Luma<u8>, Vec<u8>>){
             .expect("Failed to update window");
     }
 }
+fn decode(img:&ImageBuffer<Luma<u8>, Vec<u8>>)->Vec<u8>{
+    // 二进制数组，假设长度与图像的像素数相同
+    let mut binary_array:Vec<u8> = vec![0];
+    binary_array.clear();
+    // 遍历图像的每个像素并进行处理
+    for y in 0..img.height() {
+        for x in 0..img.width() {
+            // 获取当前像素的灰度值
+            let pixel_value = img.get_pixel(x, y)[0];
 
-fn processed_gray_image(img:&ImageBuffer<Luma<u8>, Vec<u8>>, s:String)->ImageBuffer<Luma<u8>, Vec<u8>>{
+            // 将像素的最低位取出
+            let bit:u8 = pixel_value & 0b00000001;
+            binary_array.push(bit);
+        }
+    }
+    binary_array
+}
+
+fn processed_gray_image(img:&ImageBuffer<Luma<u8>, Vec<u8>>)->ImageBuffer<Luma<u8>, Vec<u8>>{
     // 创建一个新的灰度图像，用于存储处理后的结果
     let mut processed_img = GrayImage::new(img.width(), img.height());
-    let mut binary_array:Vec<u8> = vec![0];
-    get_bit(s, &mut binary_array);
+    let mut binary_array:Vec<u8> = vec![];
+    // 创建随机数生成器
+    let mut rng = rand::thread_rng();
+
+    for _ in 0..(img.height()* img.width()){
+        // 生成随机的 0 或 1
+        let random_bit: u8 = rng.gen_range(0..=1);
+        binary_array.push(random_bit);
+    }
     // 遍历图像的每个像素并进行处理
     for y in 0..img.height() {
         for x in 0..img.width() {
@@ -99,112 +123,25 @@ fn processed_gray_image(img:&ImageBuffer<Luma<u8>, Vec<u8>>, s:String)->ImageBuf
     processed_img
 }
 
-fn decode(img:&ImageBuffer<Luma<u8>, Vec<u8>>)->Vec<u8>{
-    // 二进制数组，假设长度与图像的像素数相同
-    let mut binary_array:Vec<u8> = vec![0];
-    binary_array.clear();
-    // 遍历图像的每个像素并进行处理
-    for y in 0..img.height() {
-        for x in 0..img.width() {
-            // 获取当前像素的灰度值
-            let pixel_value = img.get_pixel(x, y)[0];
+fn main() {
+    let img_path = "./image/Lena.bmp";
+    let img_save_path = "./image/Steg.png";
 
-            // 将像素的最低位取出
-            let bit:u8 = pixel_value & 0b00000001;
-            binary_array.push(bit);
-        }
-    }
-    binary_array
-}
-
-fn all(args_vec:Vec<String>){
-    let img_path = args_vec.get(2).expect("请输入图片地址");
-    let img_save_path = args_vec.get(3).expect("请输入图片保存地址");
-    let message = args_vec.get(4).expect("请输入隐藏信息字符串");
-    // println!("img_path = {}",img_path);
-    // println!("img_save_path = {}",img_save_path);
-    // println!("message = {}", message);
     // 打开灰度图像文件
     let img = image::open(img_path).expect("Failed to open image").to_luma8();
 
     // 调用函数处理图像,实现信息隐藏
-    let processed_img = processed_gray_image(&img,message.to_string()+"\0");
+    let processed_img = processed_gray_image(&img);
 
     // 保存处理后的图像
     processed_img.save(img_save_path).expect("Failed to save image");
     println!("message 已经隐藏到 {}",img_save_path);
-    // _display_img(&processed_img);
 
     // 提取隐藏的信息
-    // 提取最低位
     let bytes_bit = decode(&processed_img);
     // 将提取出来的bit转换为 u8 数组
     let s = from_bit(&bytes_bit);
     // 将 u8 数组转换为string
     let ss = String::from_utf8_lossy(&s);
     println!("隐藏信息提取,得到message = {:?}",ss)
-}
-
-fn encode(args_vec:Vec<String>){
-    let img_path = args_vec.get(2).expect("请输入图片地址");
-    let img_save_path = args_vec.get(3).expect("请输入图片保存地址");
-    let message = args_vec.get(4).expect("请输入隐藏信息字符串");
-    // println!("img_path = {}",img_path);
-    // println!("img_save_path = {}",img_save_path);
-    // println!("message = {}", message);
-    // 打开灰度图像文件
-    let img = image::open(img_path).expect("Failed to open image").to_luma8();
-
-    // 调用函数处理图像,实现信息隐藏
-    let processed_img = processed_gray_image(&img,message.to_string()+"\0");
-
-    // 保存处理后的图像
-    processed_img.save(img_save_path).expect("Failed to save image");
-    println!("message 已经隐藏到 {}",img_save_path);
-}
-
-fn decode_from_arg(args_vec:Vec<String>){
-    let img_path = args_vec.get(2).expect("请输入图片地址");
-    // println!("img_path = {}",img_path);
-    // 打开灰度图像文件
-    let img = image::open(img_path).expect("Failed to open image").to_luma8();
-    // 提取隐藏的信息
-    // 提取最低位
-    let bytes_bit = decode(&img);
-    // 将提取出来的bit转换为 u8 数组
-    let s = from_bit(&bytes_bit);
-    // 将 u8 数组转换为string
-    let ss = String::from_utf8_lossy(&s);
-
-    println!("隐藏信息提取,得到message = {:?}",ss)
-}
-fn main() {
-    let mut args_vec:Vec<String> = Vec::new();
-    for arg in args(){
-        args_vec.push(arg);
-    }
-    match args_vec[1].as_str() {
-        "-all" =>{
-            all(args_vec)
-        },
-        "-encode" =>{
-            encode(args_vec)
-        },
-        "-decode" =>{
-            decode_from_arg(args_vec)
-        }
-        _ =>{
-            println!("命令行格式如下：
-                -all img_path img_save_path message
-                    -all ./lena.bmp ./img.png 21312656杨利伟
-                    该命令执行所有操作，包括信息隐藏和获取隐藏信息
-                -encode img_path img_save_path message
-                    -encode ./lena.bmp ./img.png 21312656杨利伟
-                    该命令执行信息隐藏操作,img_save_path为包含隐藏信息的图像
-                -decode img_path
-                    -decode ./img.png
-                    该命令获取隐藏信息, ./img.png 为含有密文的图像")
-        }
-    }
-
 }
